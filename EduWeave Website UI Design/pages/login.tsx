@@ -1,68 +1,98 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Calendar, Users, Shield } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
   const [usn, setUsn] = useState<string>('');
   const [dob, setDob] = useState<string>('');
+  const [loginType, setLoginType] = useState('student'); // 'student' or 'admin'
 
   const handleLogin = () => {
-    const studentsData = localStorage.getItem('students');
-    const students = studentsData ? JSON.parse(studentsData) : [];
-    const student = students.find((s: any) => s.usn === usn && s.dob === dob);
-
-    if (student) {
-      localStorage.setItem('currentStudent', JSON.stringify(student));
-      navigate('/dashboard');
+    if (loginType === 'admin') {
+      if (usn === 'admin' && dob === 'admin') {
+        navigate('/admin-dashboard');
+      } else {
+        alert('Invalid admin credentials');
+      }
     } else {
-      localStorage.setItem('pendingStudent', JSON.stringify({ usn, dob }));
-      navigate('/student-entry');
+      if (usn && dob) {
+        // This is the original logic: save details and navigate to the entry page
+        localStorage.setItem('pendingStudent', JSON.stringify({ usn, dob }));
+        navigate('/student-entry');
+      } else {
+        alert('Please enter USN and Date of Birth');
+      }
     }
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 dark:from-[#0b0b12] dark:via-[#0b0b12] dark:to-[#0b0b12] flex items-center justify-center p-4 transition-colors">
-      {/* Animated background orbs */}
-      <motion.div initial={{opacity:0, scale:.9}} animate={{opacity:.6, scale:1}} transition={{duration:1.2}}
-        className="pointer-events-none absolute -top-20 -left-20 w-64 h-64 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 blur-3xl opacity-30" />
-      <motion.div initial={{opacity:0, scale:.9}} animate={{opacity:.5, scale:1}} transition={{duration:1.2, delay:.2}}
-        className="pointer-events-none absolute -bottom-20 -right-20 w-72 h-72 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 blur-3xl opacity-30" />
-      <div className="bg-white dark:bg-[#12121b] text-gray-900 dark:text-indigo-100 p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-800 transition-colors">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-            EduWeave Login
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 dark:from-[#0b0b12] dark:via-[#0b0b12] dark:to-[#0b0b12] text-foreground p-4">
+      <motion.div initial={{opacity:0, y:20}} animate={{opacity:.5, y:0}} transition={{duration:1}}
+        className="pointer-events-none absolute -top-20 -left-20 w-72 h-72 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 blur-3xl opacity-30" />
+      <motion.div initial={{opacity:0, y:-20}} animate={{opacity:.5, y:0}} transition={{duration:1, delay:.2}}
+        className="pointer-events-none absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 blur-3xl opacity-30" />
+
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md p-8 space-y-8 bg-white/80 dark:bg-[#12121b]/80 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl"
+      >
+        <div className="text-center">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+            EduWeave
           </h1>
-          <p className="text-gray-600">Enter your USN and DOB to continue</p>
+          <p className="text-gray-600 dark:text-gray-400">Your campus connection.</p>
         </div>
-        <div className="space-y-6">
-          <div>
-            <label className="block text-gray-700 font-semibold mb-2">USN</label>
-            <input
-              type="text"
-              value={usn}
-              onChange={(e) => setUsn(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
-              placeholder="Enter your USN"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 font-semibold mb-2">Date of Birth</label>
-            <input
-              type="date"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-200"
-            />
-          </div>
+
+        <div className="flex bg-gray-100 dark:bg-[#1f1f2b] p-1 rounded-full">
           <button
-            onClick={handleLogin}
-            className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
-          >
-            Login
+            onClick={() => setLoginType('student')}
+            className={`w-1/2 p-2 rounded-full transition-colors text-gray-700 dark:text-gray-300 ${loginType === 'student' ? 'bg-violet-600 text-white' : ''}`}>
+            <Users className="inline-block w-5 h-5 mr-2" />
+            Student
+          </button>
+          <button
+            onClick={() => setLoginType('admin')}
+            className={`w-1/2 p-2 rounded-full transition-colors text-gray-700 dark:text-gray-300 ${loginType === 'admin' ? 'bg-violet-600 text-white' : ''}`}>
+            <Shield className="inline-block w-5 h-5 mr-2" />
+            Admin
           </button>
         </div>
-      </div>
+
+        <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-6">
+          <div className="relative">
+            <Users className="absolute w-5 h-5 text-gray-400 top-1/2 left-4 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder={loginType === 'student' ? 'University Serial Number (USN)' : 'Admin ID'}
+              value={usn}
+              onChange={(e) => setUsn(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#1f1f2b] text-gray-900 dark:text-white rounded-xl border border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-violet-500 focus:outline-none transition-colors"
+            />
+          </div>
+          <div className="relative">
+            <Calendar className="absolute w-5 h-5 text-gray-400 top-1/2 left-4 -translate-y-1/2" />
+            <input
+              type={loginType === 'student' ? 'date' : 'password'}
+              placeholder="Date of Birth"
+              value={dob}
+              onChange={(e) => setDob(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#1f1f2b] text-gray-900 dark:text-white rounded-xl border border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-violet-500 focus:outline-none transition-colors"
+            />
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            type="submit"
+            className="w-full py-3 font-semibold text-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-violet-400/20 transition-all"
+          >
+            Login
+          </motion.button>
+        </form>
+      </motion.div>
     </div>
   );
 };

@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import concurrent.futures
 import logging
+import os
 from typing import Any, Dict
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 from rag_engine import query_rag
-
 
 # Basic Flask app with wide-open CORS for local dev/frontends
 app = Flask(__name__)
@@ -64,6 +64,6 @@ def ask() -> Any:
 
 if __name__ == "__main__":
     # Run Flask app on port 5001 for local development
+    if not os.getenv("GEMINI_API_KEY"):
+        logger.warning("GEMINI_API_KEY environment variable not set.")
     app.run(host="0.0.0.0", port=5001, debug=False, threaded=True)
-
-

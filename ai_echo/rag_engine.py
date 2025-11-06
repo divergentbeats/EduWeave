@@ -9,13 +9,14 @@ from pathlib import Path
 from typing import Tuple, List
 
 import requests
+import google.generativeai as genai
 
 try:
     import faiss  # type: ignore
 except Exception as e:  # pragma: no cover
     faiss = None  # Will error later with a clearer message
 
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
+from langchain_community.document_loaders import DirectoryLoader, TextLoader, PyPDFLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.docstore.document import Document
 from langchain_community.embeddings import SentenceTransformerEmbeddings
@@ -34,15 +35,21 @@ DOCS_PKL = BASE_DIR / 'docs.pkl'
 LOCK_FILE = BASE_DIR / 'index.lock'
 CACHE_DIR = BASE_DIR / 'cache'
 
+# Configure the Gemini API
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 def _load_text_documents() -> List[Document]:
     if not DOCS_DIR.exists():
         logger.warning("Documents directory does not exist: %s", DOCS_DIR)
         return []
 
-    # Use LangChain's DirectoryLoader + TextLoader for .txt files
-    loader = DirectoryLoader(str(DOCS_DIR), glob='*.txt', loader_cls=TextLoader, show_progress=False)
-    docs = loader.load()
+    # Use LangChain's DirectoryLoader for both .txt and .pdf files
+    txt_loader = DirectoryLoader(str(DOCS_DIR), glob='*.txt', loader_cls=TextLoader, show_progress=False)
+    pdf_loader = DirectoryLoader(str(DOCS_DIR), glob='*.pdf', loader_cls=PyPDFLoader, show_progress=False)
+    
+    docs = list(txt_loader.load())
+    docs.extend(pdf_loader.load())
+
     logger.info("Loaded %d raw documents", len(docs))
 
     splitter = CharacterTextSplitter(chunk_size=400, chunk_overlap=50)
@@ -120,6 +127,7 @@ def _latest_docs_mtime() -> float:
     if not DOCS_DIR.exists():
         return 0.0
     mtimes = [p.stat().st_mtime for p in DOCS_DIR.glob('*.txt') if p.is_file()]
+    mtimes.extend([p.stat().st_mtime for p in DOCS_DIR.glob('*.pdf') if p.is_file()])
     return max(mtimes) if mtimes else 0.0
 
 
@@ -195,7 +203,7 @@ def build_or_load_index() -> FAISS:
             index_mtime = INDEX_FILE.stat().st_mtime
             docs_mtime = _latest_docs_mtime()
             if index_mtime >= docs_mtime:
-                return _load_faiss_index()
+                return _load_faiss_.index()
             logger.info("Documents changed since last index; rebuilding.")
             return rebuild_index(force=False)
     except Exception as e:
@@ -208,10 +216,16 @@ def build_or_load_index() -> FAISS:
 def get_top_contexts(query: str, k: int = 2) -> str:
     try:
         store = build_or_load_index()
-        results = store.similarity_search(query, k=k)
-        combined = "\n\n".join([r.page_content for r in results])
+        results = store.similarity_search_with_score(query, k=k)
+        # return results
+        combined = ""
+        for doc, score in results:
+            if score < 0.5: #This is a hyperparameter, may need tuning
+                combined += doc.page_content + "\n\n"
+        
         logger.info("Retrieved %d context chunks", len(results))
         return combined
+
     except Exception as e:
         logger.error("get_top_contexts failed: %s", e)
         return ""
@@ -231,47 +245,11 @@ def call_llm_with_context(prompt: str) -> str:
                     return str(cached['value'])
     except Exception as e:
         logger.warning("RAG cache read failed: %s", e)
-
-    api_key = os.getenv('BLACKBOX_API_KEY')
-    if not api_key:
-        resp_text = f"Simulated LLM response for prompt: {prompt[:200]}"
-        try:
-            with open(cache_path, 'w', encoding='utf-8') as f:
-                json.dump({'value': resp_text, 'ts': time.time()}, f)
-        except Exception:
-            pass
-        return resp_text
-
+    
     try:
-        url = 'https://api.blackbox.ai/api/v1/query'
-        headers = {
-            'Authorization': f'Bearer {api_key}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-        }
-        resp = requests.post(url, headers=headers, json={"prompt": prompt}, timeout=30)
-        if resp.status_code != 200:
-            logger.warning("Blackbox API non-200: %s - %s", resp.status_code, resp.text[:200])
-            resp_text = f"Simulated LLM response for prompt: {prompt[:200]}"
-            try:
-                with open(cache_path, 'w', encoding='utf-8') as f:
-                    json.dump({'value': resp_text, 'ts': time.time()}, f)
-            except Exception:
-                pass
-            return resp_text
-        data = resp.json()
-        # Try common fields
-        for key in ("response", "text", "answer", "data"):
-            if isinstance(data, dict) and key in data and isinstance(data[key], str) and data[key].strip():
-                resp_text = data[key]
-                try:
-                    with open(cache_path, 'w', encoding='utf-8') as f:
-                        json.dump({'value': resp_text, 'ts': time.time()}, f)
-                except Exception:
-                    pass
-                return resp_text
-        # Fallback: stringify
-        resp_text = str(data)[:1000]
+        model = genai.GenerativeModel('gemini-pro')
+        response = model.generate_content(prompt)
+        resp_text = response.text
         try:
             with open(cache_path, 'w', encoding='utf-8') as f:
                 json.dump({'value': resp_text, 'ts': time.time()}, f)
@@ -279,7 +257,7 @@ def call_llm_with_context(prompt: str) -> str:
             pass
         return resp_text
     except Exception as e:
-        logger.error("Blackbox API call failed: %s", e)
+        logger.error("Gemini API call failed: %s", e)
         resp_text = f"Simulated LLM response for prompt: {prompt[:200]}"
         try:
             with open(cache_path, 'w', encoding='utf-8') as f:
@@ -306,12 +284,22 @@ def clear_cache() -> None:
 
 def query_rag(question: str) -> dict:
     context = get_top_contexts(question, k=2)
-    prompt = (
-        "You are AI Echo, EduWeave's campus memory engine.\n\n"
-        f"Context: {context}\n\n"
-        f"Question: {question}\n\n"
-        "Answer concisely and in 2–3 sentences using the context if relevant."
-    )
+
+    if not context:
+        # If no relevant context is found, call the LLM without it
+        prompt = (
+            "You are AI Echo, EduWeave's campus memory engine.\n\n"
+            f"Question: {question}\n\n"
+            "Answer concisely and in 2–3 sentences."
+        )
+    else:
+        prompt = (
+            "You are AI Echo, EduWeave's campus memory engine.\n\n"
+            f"Context: {context}\n\n"
+            f"Question: {question}\n\n"
+            "Answer concisely and in 2–3 sentences using the context if relevant."
+        )
+    
     answer = call_llm_with_context(prompt)
     return {"context": context, "answer": answer}
 
@@ -321,5 +309,3 @@ if __name__ == '__main__':  # Simple manual test
     result = query_rag(q)
     print("Context:\n", result["context"][:500])
     print("\nAnswer:\n", result["answer"])
-
-
