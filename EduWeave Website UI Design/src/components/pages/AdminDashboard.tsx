@@ -8,6 +8,34 @@ import { getStudentData, listStudents } from '../../../utils/api';
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#00C49F', '#FFBB28', '#FF8042'];
 
 const AdminDashboard = () => {
+  const recentPlacements = [
+    { id: 1, name: 'Alice Johnson', company: 'Tech Corp', role: 'Software Engineer', date: '2 days ago' },
+    { id: 2, name: 'Bob Smith', company: 'DataSoft', role: 'Data Analyst', date: '3 days ago' },
+    { id: 3, name: 'Carol White', company: 'Cloudify', role: 'DevOps Engineer', date: '5 days ago' },
+    { id: 4, name: 'David Brown', company: 'AI Solutions', role: 'ML Engineer', date: '1 week ago' }
+  ];
+
+  const RecentPlacementsCard = () => (
+    <div className="p-6 rounded-2xl bg-gray-800 border border-gray-700 shadow-lg">
+      <h3 style={{ fontWeight: 700, ...gradientTextStyle }} className="mb-4">Recent Placements</h3>
+      <div className="space-y-3">
+        {recentPlacements.map((placement) => (
+          <div key={placement.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-900 rounded-full flex items-center justify-center">
+                <Briefcase className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <div className="font-medium text-blue-300">{placement.name}</div>
+                <div className="text-sm text-blue-400">{placement.role} at {placement.company}</div>
+              </div>
+            </div>
+            <div className="text-sm text-blue-500">{placement.date}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   const [students, setStudents] = useState<any[]>([]);
   const [allStudents, setAllStudents] = useState<Array<{usn:string;name:string}>>([]);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
@@ -74,13 +102,11 @@ const AdminDashboard = () => {
   };
   
   const gradientTextStyle = {
-    background: 'linear-gradient(to right, #3b82f6, #1e90ff)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent'
+    color: '#60a5fa' // Bright blue for better visibility on dark background
   };
 
   return (
-    <div className="min-h-screen bg-black p-8">
+    <div className="min-h-screen bg-black text-blue-400 p-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="" style={{ fontSize: 'clamp(1.75rem, 3vw, 2.25rem)', fontWeight: 700, ...gradientTextStyle }}>
           Placement Dashboard
@@ -99,23 +125,23 @@ const AdminDashboard = () => {
           </button>
           
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50">
+            <div className="absolute right-0 mt-2 w-80 bg-gray-900 rounded-lg shadow-xl border border-gray-700 z-50">
               <div className="p-4 border-b border-gray-700">
-                <h3 className="text-white font-semibold">Notifications</h3>
+                <h3 className="text-blue-400 font-semibold">Notifications</h3>
               </div>
               <div className="max-h-96 overflow-y-auto">
                 {notifications.map((notification) => (
-                  <div key={notification.id} className="p-4 border-b border-gray-700 hover:bg-gray-700 transition-colors">
+                  <div key={notification.id} className="p-4 border-b border-gray-700 hover:bg-gray-800 transition-colors">
                     <div className="flex items-start gap-3">
                       <div className={`w-2 h-2 rounded-full mt-2 ${
-                        notification.type === 'info' ? 'bg-blue-500' :
-                        notification.type === 'success' ? 'bg-green-500' :
-                        notification.type === 'warning' ? 'bg-yellow-500' : 'bg-gray-500'
+                        notification.type === 'info' ? 'bg-blue-400' :
+                        notification.type === 'success' ? 'bg-green-400' :
+                        notification.type === 'warning' ? 'bg-yellow-400' : 'bg-gray-400'
                       }`}></div>
                       <div className="flex-1">
-                        <h4 className="text-white font-medium text-sm">{notification.title}</h4>
-                        <p className="text-gray-300 text-sm mt-1">{notification.message}</p>
-                        <p className="text-gray-500 text-xs mt-2">{notification.time}</p>
+                        <h4 className="text-blue-300 font-medium text-sm">{notification.title}</h4>
+                        <p className="text-blue-400 text-sm mt-1">{notification.message}</p>
+                        <p className="text-blue-500 text-xs mt-2">{notification.time}</p>
                       </div>
                     </div>
                   </div>
@@ -128,17 +154,17 @@ const AdminDashboard = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         {/* Main Stats */}
-        <div className="p-6 rounded-2xl bg-gray-800 text-white shadow-lg"><Users className="w-6 h-6 mb-4" />
-          <div className="text-4xl font-bold">{students.length}</div><div className="text-gray-400 text-sm">Total Students</div>
+        <div className="p-6 rounded-2xl bg-gray-900 text-blue-400 shadow-lg border border-gray-700"><Users className="w-6 h-6 mb-4" />
+          <div className="text-4xl font-bold">{students.length}</div><div className="text-blue-300 text-sm">Total Students</div>
         </div>
-        <div className="p-6 rounded-2xl bg-gray-800 border-gray-700 border"><CheckCircle className="w-6 h-6 mb-4 text-green-500"/>
-          <div className="text-4xl font-bold" style={gradientTextStyle}>150</div><div className="text-gray-400 text-sm">Eligible Students</div>
+        <div className="p-6 rounded-2xl bg-gray-900 border border-gray-700"><CheckCircle className="w-6 h-6 mb-4 text-green-400"/>
+          <div className="text-4xl font-bold" style={gradientTextStyle}>150</div><div className="text-blue-300 text-sm">Eligible Students</div>
         </div>
-        <div className="p-6 rounded-2xl bg-gray-800 border-gray-700 border"><Briefcase className="w-6 h-6 mb-4 text-blue-500"/>
-          <div className="text-4xl font-bold" style={gradientTextStyle}>128</div><div className="text-gray-400 text-sm">Placed Students</div>
+        <div className="p-6 rounded-2xl bg-gray-900 border border-gray-700"><Briefcase className="w-6 h-6 mb-4 text-blue-400"/>
+          <div className="text-4xl font-bold" style={gradientTextStyle}>128</div><div className="text-blue-300 text-sm">Placed Students</div>
         </div>
-        <div className="p-6 rounded-2xl bg-gray-800 border-gray-700 border"><Percent className="w-6 h-6 mb-4 text-amber-500"/>
-          <div className="text-4xl font-bold" style={gradientTextStyle}>85%</div><div className="text-gray-400 text-sm">Placement Rate</div>
+        <div className="p-6 rounded-2xl bg-gray-900 border border-gray-700"><Percent className="w-6 h-6 mb-4 text-yellow-400"/>
+          <div className="text-4xl font-bold" style={gradientTextStyle}>85%</div><div className="text-blue-300 text-sm">Placement Rate</div>
         </div>
       </div>
 
