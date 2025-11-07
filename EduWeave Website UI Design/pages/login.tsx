@@ -7,11 +7,12 @@ const Login = () => {
   const navigate = useNavigate();
   const [usn, setUsn] = useState<string>('');
   const [dob, setDob] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [loginType, setLoginType] = useState('student'); // 'student' or 'admin'
 
   const handleLogin = () => {
     if (loginType === 'admin') {
-      if (usn === 'admin' && dob === 'admin') {
+      if (usn === 'admin' && password === 'admin') {
         navigate('/admin-dashboard');
       } else {
         alert('Invalid admin credentials');
@@ -73,16 +74,29 @@ const Login = () => {
               className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#1f1f2b] text-gray-900 dark:text-white rounded-xl border border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-violet-500 focus:outline-none transition-colors"
             />
           </div>
-          <div className="relative">
-            <Calendar className="absolute w-5 h-5 text-gray-400 top-1/2 left-4 -translate-y-1/2" />
-            <input
-              type={loginType === 'student' ? 'date' : 'password'}
-              placeholder="Date of Birth"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#1f1f2b] text-gray-900 dark:text-white rounded-xl border border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-violet-500 focus:outline-none transition-colors"
-            />
-          </div>
+          {loginType === 'student' ? (
+            <div className="relative">
+              <Calendar className="absolute w-5 h-5 text-gray-400 top-1/2 left-4 -translate-y-1/2" />
+              <input
+                type="date"
+                placeholder="Date of Birth"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#1f1f2b] text-gray-900 dark:text-white rounded-xl border border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-violet-500 focus:outline-none transition-colors"
+              />
+            </div>
+          ) : (
+            <div className="relative">
+              <Shield className="absolute w-5 h-5 text-gray-400 top-1/2 left-4 -translate-y-1/2" />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-[#1f1f2b] text-gray-900 dark:text-white rounded-xl border border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-violet-500 focus:outline-none transition-colors"
+              />
+            </div>
+          )}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
